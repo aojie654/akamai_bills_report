@@ -20,18 +20,6 @@ import os
 import pathlib
 pass
 
-# Get the current date
-cur_date = time.strftime("%Y-%m-%d", time.gmtime())
-
-# Define the dir of files location
-dir_path = '/Volumes/data/tmp/downloads/akamai_bills_geo'
-# Define the name of customer
-customer_name = input('Input the name of customer:')
-
-# Name of files need to merge
-files_list = get_file_list_name(dir_path)
-# Name of final result
-result_path = customer_name + '-bills-' + cur_date + '.csv'
 
 def get_file_list_name(dir_path):
     '''
@@ -51,14 +39,15 @@ def get_file_list_name(dir_path):
 
     return files_name_list
 
-def merge_csv_content(*args):
+
+def merge_csv_content(file_content_list):
     '''
     Define the function that merge the content
     '''
     return 0
 
 
-def read_csv_content(csv_file):
+def read_csv_content(filenames_list):
     '''
     Define the function that read the csv files
     '''
@@ -73,8 +62,30 @@ def save_csv_content(*args):
 
 
 if __name__ == "__main__":
+
+    # Define the name of customer
+    customer_name = input('Input the name of customer:')
+    # customer_name = "Shein"
+
+    # Get the current date
+    cur_date = time.strftime("%Y-%m-%d", time.gmtime())
+    # Define the dir of files location
+    dir_path = input("Inputs the directory which csv files was included:")
+    # dir_path = '/Volumes/data/tmp/downloads/akamai_bills_geo'
+    # Name of final result
+    result_filename = customer_name + '-bills-' + cur_date + '.csv'
+
     # Change the work dir to $dir_path
     os.chdir(dir_path)
-    # Merge the csv content
-    merged_result = merge_csv_content(files_list)
+
+    # Get the name of files need to merge
+    filenames_list = get_file_list_name(dir_path)
+
+    # Read the file content and save them to list
+    content_list = read_csv_content(filenames_list)
+
+    # Merge the file content and save result to $merged_result
+    merged_result = merge_csv_content(content_list)
+
+    # Write the merged_result to final result file
     save_csv_content(merged_result)
