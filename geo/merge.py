@@ -21,7 +21,6 @@ import csv
 import time
 import os
 import math
-pass
 
 
 def init_geo_codes():
@@ -39,14 +38,17 @@ def pure_csv_content(inputs_source_file):
     Delete the extra message in single csv
     '''
 
+    # Define the folders
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    pure_folder = os.path.join(cur_path, "pure")
+
     # Create pure folder if not exists
-    pure_folder = '../pure/'
     if os.path.exists(pure_folder) == False:
         os.mkdir(pure_folder)
 
     # Define the outputs pure name
-    outputs_pure_file = pure_folder + inputs_source_file
-
+    filename_source = os.path.split(inputs_source_file)[-1]
+    outputs_pure_file = os.path.join(pure_folder, filename_source)
     # Open the source file and read
     with open(inputs_source_file, mode='r', encoding='utf-8') as file_object:
         file_content = file_object.read()
@@ -77,7 +79,7 @@ def pure_csv_content(inputs_source_file):
     with open(outputs_pure_file, mode='w+', encoding='utf-8') as file_object:
         file_object.write(result_content_string)
 
-    return pure_folder+inputs_source_file
+    return outputs_pure_file
 
 
 def csv_to_list(filename, geo_codes_dict):
@@ -113,11 +115,11 @@ def csv_to_list(filename, geo_codes_dict):
     return file_read_content
 
 
-def merge_to_geo_list(list_name, geo_codes_list, least_digit):
+def merge_to_geo_list(list_name, input_list, least_digit):
     '''
     Merge the DSA and DSD data to geo_codes_list
     '''
-    merged_result = geo_codes_list
+    merged_result = input_list.copy()
     # Traversal the list_name then merge the origin value adn list_line value to one list
     for list_line in list_name:
 
@@ -125,10 +127,14 @@ def merge_to_geo_list(list_name, geo_codes_list, least_digit):
         key = list_line[0]
 
         # Convert value to a single value list
-        value = [list_line[1]]
+        value = list_line[1]
+        value_listed = [value]
 
         # Merge the list of origin value and key to one
-        merged_result[key] = merged_result[key] + value
+        if len(merged_result[key]) < least_digit:
+            merged_result[key] = merged_result[key] + value_listed
+        else:
+            merged_result[key][-1] = merged_result[key][-1] + value
 
     for m_key in merged_result.keys():
         if len(merged_result[m_key]) < least_digit:
@@ -177,10 +183,12 @@ def final_result_write(customer_name, cur_date, merged_result_list, pured_csv_ds
     '''
 
     # Name of final result
-    result_write_filename = '../' + customer_name + '-bills-' + cur_date + '.csv'
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    filename_csv = customer_name + '-bills-' + cur_date + '.csv'
+    result_write_filename = os.path.join(cur_path, filename_csv)
 
     # Open the final result file
-    with open(result_write_filename, 'w', newline='') as file_csv_write_object:
+    with open(result_write_filename, 'w', encoding="utf-8",newline='') as file_csv_write_object:
 
         # Set the CSV headers
         headers = ['Country Code', 'Country',
@@ -217,19 +225,20 @@ def final_result_write(customer_name, cur_date, merged_result_list, pured_csv_ds
         # Init data result list
         dict_write_result_list = []
 
+
         for final_result_line in final_result_list:
             # Init the dict_result_write
             dict_write_line = {}
             
-            for count in range(len(final_result_line)):
-                if type(final_result_line[count]) == int:
-                    dict_write_line[headers[count]] = format_number_to_str_comm(final_result_line[count])
+            for counter in range(len(final_result_line)):
+                if type(final_result_line[counter]) == int:
+                    dict_write_line[headers[counter]] = format_number_to_str_comm(final_result_line[counter])
                 else:
-                    dict_write_line[headers[count]] = final_result_line[count]
+                    dict_write_line[headers[counter]] = final_result_line[counter]
             # dict_write_result_list.append({headers[0]: final_result_line[0], headers[1]: final_result_line[1], headers[2]: final_result_line[2], headers[3]: final_result_line[3], headers[4]: final_result_line[4], headers[5]: final_result_line[5]})
+            # writer.writerows(dict_write_line)
             dict_write_result_list.append(dict_write_line)
             # print(dict_write_line)
-        
         # Write the data in list with method write.writerows()
         writer.writerows(dict_write_result_list)
             
@@ -250,7 +259,7 @@ def csv_add_bom(input_filename):
     bom_chars = '\uFEFF'
 
     # Open result file and read the content
-    with open(file_read_filename, mode='r', encoding='utf-8') as file_read_object:
+    with open(file_read_filename, mode='r', encoding='utf-8', errors="ignore") as file_read_object:
         file_read_content = file_read_object.read()
 
     # Add BOM to content
@@ -270,29 +279,26 @@ def csv_add_bom(input_filename):
 
 if __name__ == "__main__":
 
-    print("filename_dsa = 'DSA.csv'")
-    print("filename_dsd = 'DSD.csv'")
-
     # Define the name of customer
     # customer_name = input('Input the name of customer:')
     customer_name = "Shein"
 
     # Define the dir of files location
     # dir_path = input("Inputs the directory which csv files was included:")
-    dir_path = '/Volumes/data/tmp/downloads/akamai_bills_geo/source'
+    cur_path = os.path.dirname(os.path.realpath(__file__))
+    dir_path = os.path.join(cur_path, "datas")
 
     # Define the filename of DSA and DSD report csv file
-    filename_dsa = 'DSA.csv'
-    filename_dsd = 'DSD.csv'
+    filename_dsa_short = 'DSA.csv'
+    filename_dsd_short = 'DSD.csv'
+    filename_dsa = os.path.join(dir_path, filename_dsa_short)
+    filename_dsd = os.path.join(dir_path, filename_dsd_short)
 
     # Get the current date
     cur_date = time.strftime("%Y-%m-%d", time.localtime())
 
     # Get geo codes
     geo_codes_dict = init_geo_codes()
-
-    # Change the work dir to $dir_path
-    os.chdir(dir_path)
 
     # Pure the source csv files
     filename_dsa_pured = pure_csv_content(filename_dsa)
@@ -303,13 +309,14 @@ if __name__ == "__main__":
     content_list_dsd = csv_to_list(filename_dsd_pured, geo_codes_dict)
 
     # Merge the file content and save result to $merged_result
-    merged_result = merge_to_geo_list(
-        content_list_dsa, geo_codes_dict, least_digit=2)
-    merged_result = merge_to_geo_list(
-        content_list_dsd, geo_codes_dict, least_digit=3)
+    geo_codes_dict_init = geo_codes_dict.copy()
+    merged_result_dsa = merge_to_geo_list(
+        content_list_dsa, geo_codes_dict_init, 2)
+    merged_result_dsd = merge_to_geo_list(
+        content_list_dsd, merged_result_dsa, 3)
 
     # Convert the merged_result dic to list
-    merged_result_list = dict_to_list(merged_result)
+    merged_result_list = dict_to_list(merged_result_dsd)
 
     # Generator the final result and save to file
     message_result_write, file_result_filename = final_result_write(
